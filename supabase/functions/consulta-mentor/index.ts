@@ -76,6 +76,20 @@ serve(async (req) => {
       headers['Authorization'] = apiConfig.chave_autenticacao;
     }
 
+    const requestBody = {
+      id_usuario: user.id,
+      telefone_usuario: telefone,
+      mensagem: pergunta,
+    };
+
+    // Log detalhado da requisição para debugging
+    console.log('Enviando requisição para API externa:', {
+      url: apiConfig.url_base,
+      body: requestBody,
+      hasAuth: !!apiConfig.chave_autenticacao,
+      authLength: apiConfig.chave_autenticacao?.length || 0
+    });
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), apiConfig.timeout_segundos * 1000);
 
@@ -85,21 +99,22 @@ serve(async (req) => {
       const apiResponse = await fetch(apiConfig.url_base, {
         method: 'POST',
         headers,
-        body: JSON.stringify({
-          id_usuario: user.id,
-          telefone_usuario: telefone,
-          mensagem: pergunta,
-        }),
+        body: JSON.stringify(requestBody),
         signal: controller.signal,
       });
 
       clearTimeout(timeout);
 
       if (!apiResponse.ok) {
+        console.error(`API retornou status ${apiResponse.status}`);
+        const errorText = await apiResponse.text();
+        console.error('Resposta de erro da API:', errorText);
         throw new Error(`API retornou erro: ${apiResponse.status}`);
       }
 
       const apiData = await apiResponse.json();
+      console.log('API Response:', JSON.stringify(apiData));
+      
       resposta = apiData.resposta || apiData.message || 'Resposta recebida da API';
     } catch (error: any) {
       console.error('Erro ao chamar API externa:', error);
