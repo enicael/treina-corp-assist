@@ -65,11 +65,20 @@ const ClientDashboard = ({ userId, profile }: ClientDashboardProps) => {
     setResposta("");
 
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      if (!token) {
+        throw new Error('Sessão expirada. Faça login novamente.');
+      }
+
       const { data, error } = await supabase.functions.invoke('consulta-mentor', {
         body: {
           pergunta,
           telefone: profile?.telefone,
-        }
+        },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       if (error) throw error;
