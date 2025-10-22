@@ -22,6 +22,9 @@ serve(async (req) => {
       }
     );
 
+    const authHeader = req.headers.get('Authorization');
+    console.log('Auth header present:', !!authHeader);
+
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) {
       throw new Error('Usuário não autenticado');
@@ -169,10 +172,12 @@ serve(async (req) => {
     );
   } catch (error: any) {
     console.error('Erro na função consulta-mentor:', error);
+    const message = error?.message || 'Erro desconhecido';
+    const status = message.includes('não autenticado') ? 401 : 400;
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: message }),
       { 
-        status: 400,
+        status,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
